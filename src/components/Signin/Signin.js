@@ -1,6 +1,7 @@
+import userEvent from "@testing-library/user-event";
 import React from "react";
 
-const Signin = ({ onRouteChange }) => {
+const Signin = ({ onRouteChange, loadUser }) => {
   const [signInEmail, setSignInEmail] = React.useState();
   const [signInPassword, setSignInPassword] = React.useState();
 
@@ -23,7 +24,8 @@ const Signin = ({ onRouteChange }) => {
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data === "success") {
+        if (data.id) {
+          loadUser(data);
           onRouteChange("home");
         }
       });

@@ -15,6 +15,23 @@ function App() {
   const [box, setBox] = React.useState({});
   const [route, setRoute] = React.useState("signin");
   const [isSignedIn, setIsSignedIn] = React.useState(false);
+  const [user, setUser] = React.useState({
+    id: "",
+    name: "",
+    email: "",
+    entries: 0,
+    joined: "",
+  });
+
+  function loadUser(data) {
+    setUser({
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      entries: data.entries,
+      joined: data.joined,
+    });
+  }
 
   const onInputChange = (event) => {
     setInput(event.target.value);
@@ -27,7 +44,6 @@ function App() {
     const image = document.getElementById("inputImage");
     const width = Number(image.width);
     const height = Number(image.height);
-    console.log(width, height);
     return {
       leftCol: clarifaiFace.left_col * width,
       topRow: clarifaiFace.top_row * height,
@@ -37,7 +53,6 @@ function App() {
   }
 
   function displayFaceBox(box) {
-    console.log(box);
     setBox(box);
   }
 
@@ -57,7 +72,25 @@ function App() {
         console.log(input);
         return faceDetectModel.predict(input);
       })
-      .then((response) => displayFaceBox(calculateFaceLocation(response)))
+      .then((response) => {
+        if (response) {
+          fetch("http://localhost:3000/image", {
+            method: "put",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: user.id,
+            }),
+          })
+            .then((response) => response.json())
+            .then((count) => {
+              setUser({
+                ...user,
+                entries: count,
+              });
+            });
+        }
+        displayFaceBox(calculateFaceLocation(response));
+      })
       .catch((err) => console.log(err));
   };
 
@@ -76,7 +109,7 @@ function App() {
       {route === "home" ? (
         <div>
           <Logo />
-          <Rank />
+          <Rank userName={user.name} userEntries={user.entries} />
           <ImageLinkForm
             onInputChange={onInputChange}
             onButtonSubmit={onButtonSubmit}
@@ -84,9 +117,9 @@ function App() {
           <FaceRecognition box={box} imageUrl={imageUrl} />
         </div>
       ) : route === "signin" ? (
-        <Signin onRouteChange={onRouteChange} />
+        <Signin onRouteChange={onRouteChange} loadUser={loadUser} />
       ) : (
-        <Register onRouteChange={onRouteChange} />
+        <Register onRouteChange={onRouteChange} loadUser={loadUser} />
       )}
     </div>
   );
