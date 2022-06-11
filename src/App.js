@@ -1,6 +1,5 @@
 import React from "react";
 import "./App.css";
-import Clarifai from "clarifai";
 import Navigation from "./components/Navigation/Navigation";
 import Logo from "./components/Logo/Logo";
 import ImageLinkForm from "./components/ImageLinkForm/ImageLinkForm";
@@ -10,18 +9,20 @@ import Signin from "./components/Signin/Signin";
 import Register from "./components/Register/Register";
 
 function App() {
-  const [input, setInput] = React.useState();
-  const [imageUrl, setImageUrl] = React.useState();
-  const [box, setBox] = React.useState({});
-  const [route, setRoute] = React.useState("signin");
-  const [isSignedIn, setIsSignedIn] = React.useState(false);
-  const [user, setUser] = React.useState({
+  const initialState = {
     id: "",
     name: "",
     email: "",
     entries: 0,
     joined: "",
-  });
+  };
+
+  const [input, setInput] = React.useState();
+  const [imageUrl, setImageUrl] = React.useState();
+  const [box, setBox] = React.useState({});
+  const [route, setRoute] = React.useState("signin");
+  const [isSignedIn, setIsSignedIn] = React.useState(false);
+  const [user, setUser] = React.useState(initialState);
 
   function loadUser(data) {
     setUser({
@@ -56,22 +57,16 @@ function App() {
     setBox(box);
   }
 
-  const API_KEY = process.env.REACT_APP_API_KEY;
-
-  const app = new Clarifai.App({
-    apiKey: API_KEY,
-  });
-
   const onButtonSubmit = () => {
     setImageUrl(input);
-    app.models
-      .initModel({
-        id: Clarifai.FACE_DETECT_MODEL,
-      })
-      .then((faceDetectModel) => {
-        console.log(input);
-        return faceDetectModel.predict(input);
-      })
+    fetch("http://localhost:3000/imageurl", {
+      method: "post",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: input,
+      }),
+    })
+      .then((response) => response.json())
       .then((response) => {
         if (response) {
           fetch("http://localhost:3000/image", {
@@ -87,7 +82,8 @@ function App() {
                 ...user,
                 entries: count,
               });
-            });
+            })
+            .catch(console.log);
         }
         displayFaceBox(calculateFaceLocation(response));
       })
@@ -96,6 +92,10 @@ function App() {
 
   function onRouteChange(route) {
     if (route === "signout") {
+      setUser(initialState);
+      setBox({});
+      setInput();
+      setImageUrl();
       setIsSignedIn(false);
     } else if (route === "home") {
       setIsSignedIn(true);
